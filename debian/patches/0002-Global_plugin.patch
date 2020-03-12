@@ -1,0 +1,5 @@
+--- a/__init__.py
++++ b/__init__.py
+@@ -1 +1 @@
+-from .InteractiveHtmlBom import plugin
++from InteractiveHtmlBom import plugin
