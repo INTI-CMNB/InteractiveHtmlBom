@@ -1,0 +1,8 @@
+--- a/InteractiveHtmlBom/version.py
++++ b/InteractiveHtmlBom/version.py
+@@ -19,4 +19,4 @@
+     return None
+ 
+ 
+-version = _get_git_version() or LAST_TAG
++version = LAST_TAG
