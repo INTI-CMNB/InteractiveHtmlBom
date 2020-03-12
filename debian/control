@@ -10,7 +10,7 @@ X-Python3-Version: >= 3.2
 Package: interactivehtmlbom.inti-cmnb
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}, ${python3:Depends}
+Depends: ${misc:Depends}, ${python3:Depends}, kicad (>= 5.1.0), python3-wxgtk4.0
 Description: Interactive HTML BOM plugin for KiCad
  This plugin generates convenient BOM listing with ability to visually
  correlate and easily search for components and their placements on the pcb.
