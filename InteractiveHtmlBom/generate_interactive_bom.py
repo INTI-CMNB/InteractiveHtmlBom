@@ -4,10 +4,6 @@ from __future__ import absolute_import
 import argparse
 import os
 import sys
-# Look for the 'dialog' module from where the script is running
-prev_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if prev_dir not in sys.path:
-    sys.path.insert(0, prev_dir)
 
 
 # python 2 and 3 compatibility hack
