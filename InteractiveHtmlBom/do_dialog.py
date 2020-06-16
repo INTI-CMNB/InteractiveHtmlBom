@@ -1,3 +1,10 @@
+import os
+import sys
+# Look for the 'dialog' module from where the script is running
+cur_dir = os.path.dirname(os.path.abspath(__file__))
+if cur_dir not in sys.path:
+    sys.path.insert(0, cur_dir)
+
 from dialog.settings_dialog import *
 
 class MyApp(wx.App):
