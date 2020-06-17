@@ -11,3 +11,5 @@ InteractiveHtmlBom/web/user*
 .coverage
 pp
 *.epr
+output
+htmlcov
