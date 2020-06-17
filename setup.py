@@ -4,6 +4,7 @@ import os
 import sys
 import glob
 import os.path
+import re
 from distutils.core import setup
 
 # Package meta-data.
@@ -20,13 +21,14 @@ here = os.path.abspath(os.path.dirname(__file__))
 with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
      long_description = '\n' + f.read()
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(script_dir)
-os.environ['INTERACTIVE_HTML_BOM_CLI_MODE'] = 'True'
-import InteractiveHtmlBom.version
+with open("InteractiveHtmlBom/version.py") as f:
+    s = f.read()
+    m = re.search(r"LAST_TAG = 'v(.*)'", s)
+    assert m
+    version = m.group(1)
 
 setup(name=NAME,
-    version=InteractiveHtmlBom.version.LAST_TAG[1:],
+    version=version,
     description=DESCRIPTION,
     long_description=long_description,
     #long_description_content_type='text/markdown',
