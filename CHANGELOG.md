@@ -9,7 +9,7 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
-## [2.3.1] - 2020-06-16
+## [2.3.2] - 2020-06-17
 ### Added
 - Custom js css and header/footer support
 
