@@ -14,8 +14,7 @@ Note: only changes after the fork are listed.
 - Custom js css and header/footer support
 
 ### Changed
-- No to avoid X11 dependency in the pure command line tool you must define:
-  INTERACTIVE_HTML_NO_X11=True
+- Removed X11 dependency when DISPLAY isn't defined
 
 ### Fixed
 - The local copy of the scripts now has priority over the installed ones.
