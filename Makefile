@@ -18,5 +18,12 @@ test:
 	pytest-3
 	$(PY_COV) report
 
+test_local:
+	rm -rf output
+	$(PY_COV) erase
+	pytest-3 --test_dir output
+	$(PY_COV) report
+	$(PY_COV) html
+	x-www-browser htmlcov/index.html
 
 .PHONY: deb deb_clean
