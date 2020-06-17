@@ -154,6 +154,8 @@ class TestContext(object):
     def run(self, ret_val=None, extra=None, use_a_tty=False, filename=None, no_out_dir=False, no_board_file=False,
             no_config_file=False, chdir_out=False, no_verbose=False):
         logging.debug('Running '+self.test_name)
+        # We aren't using the dialog
+        os.environ['INTERACTIVE_HTML_BOM_NO_DISPLAY'] = ''
         # Change the command to be local and add the board and output arguments
         cmd = [COVERAGE_SCRIPT, 'run', '-a']
         if chdir_out:
