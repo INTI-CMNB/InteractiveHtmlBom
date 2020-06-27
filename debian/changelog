@@ -1,3 +1,9 @@
+interactivehtmlbom.inti-cmnb (2.3.3-1) stable; urgency=medium
+
+  * Fixes variants-blacklist, variants-whitelist cli options (#162)
+
+ -- Salvador E. Tropea <salvador@inti.gob.ar>  Sat, 27 Jun 2020 12:08:53 -0300
+
 interactivehtmlbom.inti-cmnb (2.3.2-1) stable; urgency=medium
 
   * New upstream release.

@@ -9,6 +9,10 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.3.3] - 2020-06-27
+### Fixed
+- variants-blacklist, variants-whitelist cli options (#162)
+
 ## [2.3.2] - 2020-06-17
 ### Added
 - Custom js css and header/footer support
