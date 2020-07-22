@@ -13,6 +13,7 @@ Note: only changes after the fork are listed.
 
 ### Fixed
 - Catch exceptions on parsing net/xml files (Fixes #166)
+- Return with error level != 0 for parsing errors.
 
 ## [2.3.3] - 2020-06-27
 ### Fixed
