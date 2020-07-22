@@ -8,6 +8,11 @@ Note: only changes after the fork are listed.
 
 
 ## [Unreleased]
+### Added
+- Middle mouse button canvas panning, now matches Pcbnew and Eeschema
+
+### Fixed
+- Catch exceptions on parsing net/xml files (Fixes #166)
 
 ## [2.3.3] - 2020-06-27
 ### Fixed
