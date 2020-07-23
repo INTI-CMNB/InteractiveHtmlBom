@@ -167,7 +167,8 @@ class TestContext(object):
             cmd = cmd+['--dest-dir', os.path.abspath(self.output_dir)]
         if extra is not None:
             cmd = cmd+extra
-        cmd.append(filename if filename else self.board_file)
+        if not no_board_file:
+            cmd.append(filename if filename else self.board_file)
         logging.debug(cmd)
         out_filename = self.get_out_path('output.txt')
         err_filename = self.get_out_path('error.txt')

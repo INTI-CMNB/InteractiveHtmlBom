@@ -21,7 +21,7 @@ from utils import context
 prev_dir = os.path.dirname(prev_dir)
 if prev_dir not in sys.path:
     sys.path.insert(0, prev_dir)
-from kiplot.misc import (BOM_ERROR)
+from InteractiveHtmlBom.errors import (ERROR_PARSE, ERROR_FILE_NOT_FOUND, ERROR_NO_DISPLAY)
 
 BOM_DIR = 'BoM'
 
@@ -33,6 +33,7 @@ def test_ibom():
     ctx.expect_out_file('ibom.html')
     ctx.clean_up()
 
+
 def test_ibom_utf8_filename():
     prj = 'ñandú'
     ctx = context.TestContext('Simple', prj, None, BOM_DIR)
@@ -40,6 +41,26 @@ def test_ibom_utf8_filename():
     ctx.expect_out_file('ñandú_ibom.html')
     ctx.clean_up()
 
+
+def test_wrong_file():
+    prj = 'bom'
+    ctx = context.TestContext('WrongFile', prj, None, BOM_DIR)
+    ctx.run(ERROR_FILE_NOT_FOUND, extra=['bogus'], no_board_file=True)
+    ctx.clean_up()
+
+
+def test_parser_error():
+    prj = 'ibom_fail'
+    ctx = context.TestContext('ParserError', prj, None, BOM_DIR)
+    ctx.run(ERROR_PARSE)
+    ctx.clean_up()
+
+
+def test_show_dialog():
+    prj = 'bom'
+    ctx = context.TestContext('ShowDialog', prj, None, BOM_DIR)
+    ctx.run(ERROR_NO_DISPLAY, extra=['--show-dialog'])
+    ctx.clean_up()
 
 #     # Check all outputs are there
 #     # We us this format: %f_iBoM

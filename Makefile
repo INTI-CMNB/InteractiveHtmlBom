@@ -3,6 +3,7 @@ PY_COV=python3-coverage
 CWD := $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 USER_ID=$(shell id -u)
 GROUP_ID=$(shell id -g)
+PYTEST=pytest-3
 
 
 deb:
@@ -19,16 +20,24 @@ lint:
 
 test:
 	$(PY_COV) erase
-	pytest-3
+	$(PYTEST)
 	$(PY_COV) report
 
 test_local:
 	rm -rf output
 	$(PY_COV) erase
-	pytest-3 --test_dir output
+	$(PYTEST) --test_dir output
 	$(PY_COV) report
 	$(PY_COV) html
 	x-www-browser htmlcov/index.html
+
+single_test:
+	rm -rf pp
+	-$(PYTEST) --log-cli-level debug -k "$(SINGLE_TEST)" --test_dir pp
+	@echo "********************" Output
+	@cat pp/*/output.txt
+	@echo "********************" Error
+	@cat pp/*/error.txt
 
 test_build:
 	docker run --rm -v $(CWD)/..:$(CWD)/.. --workdir="$(CWD)" \
