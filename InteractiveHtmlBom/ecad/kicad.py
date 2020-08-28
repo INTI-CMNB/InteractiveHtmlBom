@@ -236,7 +236,6 @@ class PcbnewParser(EcadParser):
             layers.append("B")
         pos = self.normalize(pad.GetPosition())
         size = self.normalize(pad.GetSize())
-        is_pin1 = pad.GetPadName() in ['1', 'A', 'A1', 'P1', 'PAD1']
         angle = pad.GetOrientation() * -0.1
         shape_lookup = {
             pcbnew.PAD_SHAPE_RECT: "rect",
@@ -261,8 +260,6 @@ class PcbnewParser(EcadParser):
             "angle": angle,
             "shape": shape
         }
-        if is_pin1:
-            pad_dict['pin1'] = 1
         if shape == "custom":
             polygon_set = pad.GetCustomShapeAsPolygon()
             if polygon_set.HasHoles():
@@ -332,14 +329,18 @@ class PcbnewParser(EcadParser):
                 if pad_dict is not None:
                     pads.append((p.GetPadName(), pad_dict))
 
-            # If no pads have common 'first' pad name pick lexicographically.
-            pin1_pads = [p for p in pads if 'pin1' in p[1]]
-            if pads and not pin1_pads:
+            if pads:
+                # Try to guess first pin name.
                 pads = sorted(pads, key=lambda el: el[0])
+                pin1_pads = [p for p in pads if p[0] in ['1', 'A', 'A1', 'P1', 'PAD1']]
+                if pin1_pads:
+                    pin1_pad_name = pin1_pads[0][0]
+                else:
+                    # No pads have common first pin name, pick lexicographically smallest.
+                    pin1_pad_name = pads[0][0]
                 for pad_name, pad_dict in pads:
-                    if pad_name:
+                    if pad_name == pin1_pad_name:
                         pad_dict['pin1'] = 1
-                        break
 
             pads = [p[1] for p in pads]
 
@@ -391,14 +392,20 @@ class PcbnewParser(EcadParser):
         for zone in zones:  # type: pcbnew.ZONE_CONTAINER
             if not zone.IsFilled() or zone.GetIsKeepout():
                 continue
-            if zone.GetLayer() in [pcbnew.F_Cu, pcbnew.B_Cu]:
+            layers = [l for l in list(zone.GetLayerSet().Seq())
+                      if l in [pcbnew.F_Cu, pcbnew.B_Cu]]
+            for layer in layers:
+                try:
+                    poly_set = zone.GetFilledPolysList()
+                except TypeError:
+                    poly_set = zone.GetFilledPolysList(layer)
                 zone_dict = {
-                    "polygons": self.parse_poly_set(zone.GetFilledPolysList()),
+                    "polygons": self.parse_poly_set(poly_set),
                     "width": zone.GetMinThickness() * 1e-6,
                 }
                 if self.config.include_nets:
                     zone_dict["net"] = zone.GetNetname()
-                result[zone.GetLayer()].append(zone_dict)
+                result[layer].append(zone_dict)
 
         return {
             'F': result.get(pcbnew.F_Cu),
