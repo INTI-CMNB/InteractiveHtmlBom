@@ -11,6 +11,7 @@ deb:
 
 deb_clean:
 	fakeroot debian/rules clean
+	rm -rf dist/ InteractiveHtmlBom.egg-info/
 
 lint:
 	# flake8 --filename is broken
