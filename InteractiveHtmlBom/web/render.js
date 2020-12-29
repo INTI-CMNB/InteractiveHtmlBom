@@ -12,11 +12,11 @@ function calcFontPoint(linepoint, text, offsetx, offsety, tilt) {
     linepoint[1] * text.height + offsety
   ];
   // This approximates pcbnew behavior with how text tilts depending on horizontal justification
-  point[0] -= (linepoint[1] + 0.5 * (1 + text.horiz_justify)) * text.height * tilt;
+  point[0] -= (linepoint[1] + 0.5 * (1 + text.justify[0])) * text.height * tilt;
   return point;
 }
 
-function drawtext(ctx, text, color, flip) {
+function drawText(ctx, text, color) {
   if ("ref" in text && !settings.renderReferences) return;
   if ("val" in text && !settings.renderValues) return;
   ctx.save();
@@ -25,7 +25,7 @@ function drawtext(ctx, text, color, flip) {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.lineWidth = text.thickness;
-  if (text.svgpath) {
+  if ("svgpath" in text) {
     ctx.stroke(new Path2D(text.svgpath));
     ctx.restore();
     return;
@@ -41,14 +41,15 @@ function drawtext(ctx, text, color, flip) {
   if (text.attr.includes("italic")) {
     tilt = 0.125;
   }
-  var interline = (text.height * 1.5 + text.thickness) / 2;
+  var interline = text.height * 1.5 + text.thickness;
   var txt = text.text.split("\n");
   // KiCad ignores last empty line.
   if (txt[txt.length - 1] == '') txt.pop();
   ctx.rotate(deg2rad(angle));
+  var offsety = (1 - text.justify[1]) / 2 * text.height; // One line offset
+  offsety -= (txt.length - 1) * (text.justify[1] + 1) / 2 * interline; // Multiline offset
   for (var i in txt) {
-    var offsety = (-(txt.length - 1) + i * 2) * interline + text.height / 2;
-    var lineWidth = text.thickness + interline * tilt;
+    var lineWidth = text.thickness + interline / 2 * tilt;
     for (var j = 0; j < txt[i].length; j++) {
       if (txt[i][j] == '\t') {
         var fourSpaces = 4 * pcbdata.font_data[' '].w * text.width;
@@ -62,20 +63,7 @@ function drawtext(ctx, text, color, flip) {
         lineWidth += pcbdata.font_data[txt[i][j]].w * text.width;
       }
     }
-    var offsetx = 0;
-    switch (text.horiz_justify) {
-      case -1:
-        // Justify left, do nothing
-        break;
-      case 0:
-        // Justify center
-        offsetx -= lineWidth / 2;
-        break;
-      case 1:
-        // Justify right
-        offsetx -= lineWidth;
-        break;
-    }
+    var offsetx = -lineWidth * (text.justify[0] + 1) / 2;
     var inOverbar = false;
     for (var j = 0; j < txt[i].length; j++) {
       if (txt[i][j] == '\t') {
@@ -116,6 +104,7 @@ function drawtext(ctx, text, color, flip) {
       }
       offsetx += glyph.w * text.width;
     }
+    offsety += interline;
   }
   ctx.restore();
 }
@@ -124,13 +113,20 @@ function drawedge(ctx, scalefactor, edge, color) {
   ctx.strokeStyle = color;
   ctx.lineWidth = Math.max(1 / scalefactor, edge.width);
   ctx.lineCap = "round";
-  if (edge.svgpath) {
+  if ("svgpath" in edge) {
     ctx.stroke(new Path2D(edge.svgpath));
   } else {
     ctx.beginPath();
     if (edge.type == "segment") {
       ctx.moveTo(...edge.start);
       ctx.lineTo(...edge.end);
+    }
+    if (edge.type == "rect") {
+      ctx.moveTo(...edge.start);
+      ctx.lineTo(edge.start[0], edge.end[1]);
+      ctx.lineTo(...edge.end);
+      ctx.lineTo(edge.end[0], edge.start[1]);
+      ctx.lineTo(...edge.start);
     }
     if (edge.type == "arc") {
       ctx.arc(
@@ -203,7 +199,7 @@ function getPolygonsPath(shape) {
   if (shape.path2d) {
     return shape.path2d;
   }
-  if (shape.svgpath) {
+  if ("svgpath" in shape) {
     shape.path2d = new Path2D(shape.svgpath);
   } else {
     var path = new Path2D();
@@ -222,7 +218,7 @@ function getPolygonsPath(shape) {
 function drawPolygonShape(ctx, shape, color) {
   ctx.save();
   ctx.fillStyle = color;
-  if (!shape.svgpath) {
+  if (!("svgpath" in shape)) {
     ctx.translate(...shape.pos);
     ctx.rotate(deg2rad(-shape.angle));
   }
@@ -230,13 +226,13 @@ function drawPolygonShape(ctx, shape, color) {
   ctx.restore();
 }
 
-function drawDrawing(ctx, layer, scalefactor, drawing, color) {
+function drawDrawing(ctx, scalefactor, drawing, color) {
   if (["segment", "arc", "circle", "curve"].includes(drawing.type)) {
     drawedge(ctx, scalefactor, drawing, color);
   } else if (drawing.type == "polygon") {
     drawPolygonShape(ctx, drawing, color);
   } else {
-    drawtext(ctx, drawing, color, layer == "B");
+    drawText(ctx, drawing, color);
   }
 }
 
@@ -297,32 +293,32 @@ function drawPad(ctx, pad, color, outline, hole) {
   ctx.restore();
 }
 
-function drawModule(ctx, layer, scalefactor, module, padcolor, outlinecolor, highlight, outline) {
+function drawFootprint(ctx, layer, scalefactor, footprint, padcolor, outlinecolor, highlight, outline) {
   if (highlight) {
     // draw bounding box
-    if (module.layer == layer) {
+    if (footprint.layer == layer) {
       ctx.save();
       ctx.globalAlpha = 0.2;
-      ctx.translate(...module.bbox.pos);
-      ctx.rotate(deg2rad(-module.bbox.angle));
-      ctx.translate(...module.bbox.relpos);
+      ctx.translate(...footprint.bbox.pos);
+      ctx.rotate(deg2rad(-footprint.bbox.angle));
+      ctx.translate(...footprint.bbox.relpos);
       ctx.fillStyle = padcolor;
-      ctx.fillRect(0, 0, ...module.bbox.size);
+      ctx.fillRect(0, 0, ...footprint.bbox.size);
       ctx.globalAlpha = 1;
       ctx.strokeStyle = padcolor;
-      ctx.strokeRect(0, 0, ...module.bbox.size);
+      ctx.strokeRect(0, 0, ...footprint.bbox.size);
       ctx.restore();
     }
   }
   // draw drawings
-  for (var drawing of module.drawings) {
+  for (var drawing of footprint.drawings) {
     if (drawing.layer == layer) {
-      drawDrawing(ctx, layer, scalefactor, drawing.drawing, padcolor);
+      drawDrawing(ctx, scalefactor, drawing.drawing, padcolor);
     }
   }
   // draw pads
   if (settings.renderPads) {
-    for (var pad of module.pads) {
+    for (var pad of footprint.pads) {
       if (pad.layers.includes(layer)) {
         drawPad(ctx, pad, padcolor, outline, true);
         if (pad.pin1 && settings.highlightpin1) {
@@ -341,7 +337,7 @@ function drawEdgeCuts(canvas, scalefactor) {
   }
 }
 
-function drawModules(canvas, layer, scalefactor, highlight) {
+function drawFootprints(canvas, layer, scalefactor, highlight) {
   var ctx = canvas.getContext("2d");
   ctx.lineWidth = 3 / scalefactor;
   var style = getComputedStyle(topmostdiv);
@@ -351,11 +347,11 @@ function drawModules(canvas, layer, scalefactor, highlight) {
     padcolor = style.getPropertyValue('--pad-color-highlight');
     outlinecolor = style.getPropertyValue('--pin1-outline-color-highlight');
   }
-  for (var i = 0; i < pcbdata.modules.length; i++) {
-    var mod = pcbdata.modules[i];
+  for (var i = 0; i < pcbdata.footprints.length; i++) {
+    var mod = pcbdata.footprints[i];
     var outline = settings.renderDnpOutline && pcbdata.bom.skipped.includes(i);
-    if (!highlight || highlightedModules.includes(i)) {
-      drawModule(ctx, layer, scalefactor, mod, padcolor, outlinecolor, highlight, outline);
+    if (!highlight || highlightedFootprints.includes(i)) {
+      drawFootprint(ctx, layer, scalefactor, mod, padcolor, outlinecolor, highlight, outline);
     }
   }
 }
@@ -363,12 +359,12 @@ function drawModules(canvas, layer, scalefactor, highlight) {
 function drawBgLayer(layername, canvas, layer, scalefactor, edgeColor, polygonColor, textColor) {
   var ctx = canvas.getContext("2d");
   for (var d of pcbdata[layername][layer]) {
-    if (["segment", "arc", "circle", "curve"].includes(d.type)) {
+    if (["segment", "arc", "circle", "curve", "rect"].includes(d.type)) {
       drawedge(ctx, scalefactor, d, edgeColor);
     } else if (d.type == "polygon") {
       drawPolygonShape(ctx, d, polygonColor);
     } else {
-      drawtext(ctx, d, textColor, layer == "B");
+      drawText(ctx, d, textColor);
     }
   }
 }
@@ -397,9 +393,11 @@ function drawZones(canvas, layer, color, highlight) {
       zone.path2d = getPolygonsPath(zone);
     }
     if (highlight && highlightedNet != zone.net) continue;
-    ctx.lineWidth = zone.width ? zone.width : 0;
     ctx.fill(zone.path2d);
-    ctx.stroke(zone.path2d);
+    if (zone.width > 0) {
+      ctx.lineWidth = zone.width;
+      ctx.stroke(zone.path2d);
+    }
   }
 }
 
@@ -429,9 +427,9 @@ function drawNets(canvas, layer, highlight) {
   if (highlight && settings.renderPads) {
     var padColor = style.getPropertyValue('--pad-color-highlight');
     var ctx = canvas.getContext("2d");
-    for (var mod of pcbdata.modules) {
+    for (var footprint of pcbdata.footprints) {
       // draw pads
-      for (var pad of mod.pads) {
+      for (var pad of footprint.pads) {
         if (highlightedNet != pad.net) continue;
         if (pad.layers.includes(layer)) {
           drawPad(ctx, pad, padColor, false, true);
@@ -445,8 +443,8 @@ function drawHighlightsOnLayer(canvasdict, clear = true) {
   if (clear) {
     clearCanvas(canvasdict.highlight);
   }
-  if (highlightedModules.length > 0) {
-    drawModules(canvasdict.highlight, canvasdict.layer,
+  if (highlightedFootprints.length > 0) {
+    drawFootprints(canvasdict.highlight, canvasdict.layer,
       canvasdict.transform.s * canvasdict.transform.zoom, true);
   }
   if (highlightedNet !== null) {
@@ -467,7 +465,7 @@ function drawBackground(canvasdict, clear = true) {
   }
 
   drawNets(canvasdict.bg, canvasdict.layer, false);
-  drawModules(canvasdict.bg, canvasdict.layer,
+  drawFootprints(canvasdict.bg, canvasdict.layer,
     canvasdict.transform.s * canvasdict.transform.zoom, false);
 
   drawEdgeCuts(canvasdict.bg, canvasdict.transform.s);
@@ -639,8 +637,8 @@ function netHitScan(layer, x, y) {
   }
   // Check pads
   if (settings.renderPads) {
-    for (var mod of pcbdata.modules) {
-      for(var pad of mod.pads) {
+    for (var footprint of pcbdata.footprints) {
+      for(var pad of footprint.pads) {
         if (pad.layers.includes(layer) && pointWithinPad(x, y, pad)) {
           return pad.net;
         }
@@ -650,7 +648,7 @@ function netHitScan(layer, x, y) {
   return null;
 }
 
-function pointWithinModuleBbox(x, y, bbox) {
+function pointWithinFootprintBbox(x, y, bbox) {
   var v = [x - bbox.pos[0], y - bbox.pos[1]];
   v = rotateVector(v, bbox.angle);
   return bbox.relpos[0] <= v[0] && v[0] <= bbox.relpos[0] + bbox.size[0] &&
@@ -659,10 +657,10 @@ function pointWithinModuleBbox(x, y, bbox) {
 
 function bboxHitScan(layer, x, y) {
   var result = [];
-  for (var i = 0; i < pcbdata.modules.length; i++) {
-    var module = pcbdata.modules[i];
-    if (module.layer == layer) {
-      if (pointWithinModuleBbox(x, y, module.bbox)) {
+  for (var i = 0; i < pcbdata.footprints.length; i++) {
+    var footprint = pcbdata.footprints[i];
+    if (footprint.layer == layer) {
+      if (pointWithinFootprintBbox(x, y, footprint.bbox)) {
         result.push(i);
       }
     }
@@ -715,9 +713,9 @@ function handleMouseClick(e, layerdict) {
     }
   }
   if (highlightedNet === null) {
-    var modules = bboxHitScan(layerdict.layer, ...v);
-    if (modules.length > 0) {
-      modulesClicked(modules);
+    var footprints = bboxHitScan(layerdict.layer, ...v);
+    if (footprints.length > 0) {
+      footprintsClicked(footprints);
     }
   }
 }

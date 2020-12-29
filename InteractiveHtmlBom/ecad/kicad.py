@@ -5,6 +5,7 @@ import pcbnew
 
 from .common import EcadParser, Component
 from .kicad_extra import find_latest_schematic_data, parse_schematic_data
+from .svgpath import create_path
 from ..core import ibom
 from ..core.config import Config
 from ..core.fontparser import FontParser
@@ -17,6 +18,10 @@ class PcbnewParser(EcadParser):
         self.board = board
         if self.board is None:
             self.board = pcbnew.LoadBoard(self.file_name)  # type: pcbnew.BOARD
+        if hasattr(self.board, 'GetModules'):
+            self.footprints = list(self.board.GetModules())
+        else:
+            self.footprints = list(self.board.GetFootprints())
         self.font_parser = FontParser()
         self.extra_data_func = parse_schematic_data
 
@@ -38,7 +43,7 @@ class PcbnewParser(EcadParser):
     def normalize(point):
         return [point[0] * 1e-6, point[1] * 1e-6]
 
-    def parse_draw_segment(self, d):
+    def parse_shape(self, d):
         # type: (pcbnew.DRAWSEGMENT) -> dict | None
         shape = {
             pcbnew.S_SEGMENT: "segment",
@@ -46,13 +51,14 @@ class PcbnewParser(EcadParser):
             pcbnew.S_ARC: "arc",
             pcbnew.S_POLYGON: "polygon",
             pcbnew.S_CURVE: "curve",
+            pcbnew.S_RECT: "rect",
         }.get(d.GetShape(), "")
         if shape == "":
             self.logger.info("Unsupported shape %s, skipping", d.GetShape())
             return None
         start = self.normalize(d.GetStart())
         end = self.normalize(d.GetEnd())
-        if shape == "segment":
+        if shape in ["segment", "rect"]:
             return {
                 "type": shape,
                 "start": start,
@@ -87,8 +93,12 @@ class PcbnewParser(EcadParser):
                 self.logger.info("Polygons not supported for KiCad 4, skipping")
                 return None
             angle = 0
-            if d.GetParentModule() is not None:
-                angle = d.GetParentModule().GetOrientation() * 0.1,
+            if hasattr(d, 'GetParentModule'):
+                parent_footprint = d.GetParentModule()
+            else:
+                parent_footprint = d.GetParentFootprint()
+            if parent_footprint is not None:
+                angle = parent_footprint.GetOrientation() * 0.1,
             return {
                 "type": shape,
                 "pos": start,
@@ -125,6 +135,21 @@ class PcbnewParser(EcadParser):
         pos = self.normalize(d.GetPosition())
         if not d.IsVisible():
             return None
+        if hasattr(d, "GetTextThickness"):
+            thickness = d.GetTextThickness() * 1e-6
+        else:
+            thickness = d.GetThickness() * 1e-6
+        if hasattr(d, 'TransformToSegmentList'):
+            segments = [self.normalize(p) for p in d.TransformToSegmentList()]
+            lines = []
+            for i in range(0, len(segments), 2):
+                if i == 0 or segments[i-1] != segments[i]:
+                    lines.append([segments[i]])
+                lines[-1].append(segments[i+1])
+            return {
+                "thickness": thickness,
+                "svgpath": create_path(lines)
+            }
         if d.GetClass() == "MTEXT":
             angle = d.GetDrawRotation() * 0.1
         else:
@@ -138,10 +163,6 @@ class PcbnewParser(EcadParser):
         else:
             height = d.GetHeight() * 1e-6
             width = d.GetWidth() * 1e-6
-        if hasattr(d, "GetTextThickness"):
-            thickness = d.GetTextThickness() * 1e-6
-        else:
-            thickness = d.GetThickness() * 1e-6
         if hasattr(d, "GetShownText"):
             text = d.GetShownText()
         else:
@@ -154,20 +175,21 @@ class PcbnewParser(EcadParser):
             attributes.append("italic")
         if d.IsBold():
             attributes.append("bold")
+
         return {
             "pos": pos,
             "text": text,
             "height": height,
             "width": width,
-            "horiz_justify": d.GetHorizJustify(),
+            "justify": [d.GetHorizJustify(), d.GetVertJustify()],
             "thickness": thickness,
             "attr": attributes,
             "angle": angle
         }
 
     def parse_drawing(self, d):
-        if d.GetClass() in ["DRAWSEGMENT", "MGRAPHIC"]:
-            return self.parse_draw_segment(d)
+        if d.GetClass() in ["DRAWSEGMENT", "MGRAPHIC", "PCB_SHAPE"]:
+            return self.parse_shape(d)
         elif d.GetClass() in ["PTEXT", "MTEXT"]:
             return self.parse_text(d)
         else:
@@ -179,8 +201,8 @@ class PcbnewParser(EcadParser):
         edges = []
         drawings = list(pcb.GetDrawings())
         bbox = None
-        for m in pcb.GetModules():
-            for g in m.GraphicalItems():
+        for f in self.footprints:
+            for g in f.GraphicalItems():
                 drawings.append(g)
         for d in drawings:
             if d.GetLayer() == pcbnew.Edge_Cuts:
@@ -219,10 +241,10 @@ class PcbnewParser(EcadParser):
 
     def get_all_drawings(self):
         drawings = [(d.GetClass(), d) for d in list(self.board.GetDrawings())]
-        for m in self.board.GetModules():
-            drawings.append(("ref", m.Reference()))
-            drawings.append(("val", m.Value()))
-            for d in m.GraphicalItems():
+        for f in self.footprints:
+            drawings.append(("ref", f.Reference()))
+            drawings.append(("val", f.Value()))
+            for d in f.GraphicalItems():
                 drawings.append((d.GetClass(), d))
         return drawings
 
@@ -273,8 +295,13 @@ class PcbnewParser(EcadParser):
         if shape == "chamfrect":
             pad_dict["chamfpos"] = pad.GetChamferPositions()
             pad_dict["chamfratio"] = pad.GetChamferRectRatio()
-        if (pad.GetAttribute() == pcbnew.PAD_ATTRIB_STANDARD or
-            pad.GetAttribute() == pcbnew.PAD_ATTRIB_HOLE_NOT_PLATED):
+        if hasattr(pcbnew, 'PAD_ATTRIB_PTH'):
+            through_hole_attributes = [pcbnew.PAD_ATTRIB_PTH,
+                                       pcbnew.PAD_ATTRIB_NPTH]
+        else:
+            through_hole_attributes = [pcbnew.PAD_ATTRIB_STANDARD,
+                                       pcbnew.PAD_ATTRIB_HOLE_NOT_PLATED]
+        if pad.GetAttribute() in through_hole_attributes:
             pad_dict["type"] = "th"
             pad_dict["drillshape"] = {
                 pcbnew.PAD_DRILL_SHAPE_CIRCLE: "circle",
@@ -290,27 +317,30 @@ class PcbnewParser(EcadParser):
 
         return pad_dict
 
-    def parse_modules(self, pcb_modules):
+    def parse_footprints(self):
         # type: (list) -> list
-        modules = []
-        for m in pcb_modules:  # type: pcbnew.MODULE
-            ref = m.GetReference()
+        footprints = []
+        for f in self.footprints:
+            ref = f.GetReference()
 
             # bounding box
-            m_copy = pcbnew.MODULE(m)
-            m_copy.SetOrientation(0)
-            m_copy.SetPosition(pcbnew.wxPoint(0, 0))
-            mrect = m_copy.GetFootprintRect()
+            if hasattr(pcbnew, 'MODULE'):
+                f_copy = pcbnew.MODULE(f)
+            else:
+                f_copy = pcbnew.FOOTPRINT(f)
+            f_copy.SetOrientation(0)
+            f_copy.SetPosition(pcbnew.wxPoint(0, 0))
+            mrect = f_copy.GetFootprintRect()
             bbox = {
-                "pos": self.normalize(m.GetPosition()),
+                "pos": self.normalize(f.GetPosition()),
                 "relpos": self.normalize(mrect.GetPosition()),
                 "size": self.normalize(mrect.GetSize()),
-                "angle": m.GetOrientation() * 0.1,
+                "angle": f.GetOrientation() * 0.1,
             }
 
             # graphical drawings
             drawings = []
-            for d in m.GraphicalItems():
+            for d in f.GraphicalItems():
                 # we only care about copper ones, silkscreen is taken care of
                 if d.GetLayer() not in [pcbnew.F_Cu, pcbnew.B_Cu]:
                     continue
@@ -324,7 +354,7 @@ class PcbnewParser(EcadParser):
 
             # footprint pads
             pads = []
-            for p in m.Pads():
+            for p in f.Pads():
                 pad_dict = self.parse_pad(p)
                 if pad_dict is not None:
                     pads.append((p.GetPadName(), pad_dict))
@@ -344,8 +374,8 @@ class PcbnewParser(EcadParser):
 
             pads = [p[1] for p in pads]
 
-            # add module
-            modules.append({
+            # add footprint
+            footprints.append({
                 "ref": ref,
                 "bbox": bbox,
                 "pads": pads,
@@ -353,10 +383,10 @@ class PcbnewParser(EcadParser):
                 "layer": {
                     pcbnew.F_Cu: "F",
                     pcbnew.B_Cu: "B"
-                }.get(m.GetLayer())
+                }.get(f.GetLayer())
             })
 
-        return modules
+        return footprints
 
     def parse_tracks(self, tracks):
         result = {pcbnew.F_Cu: [], pcbnew.B_Cu: []}
@@ -390,7 +420,9 @@ class PcbnewParser(EcadParser):
     def parse_zones(self, zones):
         result = {pcbnew.F_Cu: [], pcbnew.B_Cu: []}
         for zone in zones:  # type: pcbnew.ZONE_CONTAINER
-            if not zone.IsFilled() or zone.GetIsKeepout():
+            if (not zone.IsFilled() or
+                    hasattr(zone, 'GetIsKeepout') and zone.GetIsKeepout() or
+                    hasattr(zone, 'GetIsRuleArea') and zone.GetIsRuleArea()):
                 continue
             layers = [l for l in list(zone.GetLayerSet().Seq())
                       if l in [pcbnew.F_Cu, pcbnew.B_Cu]]
@@ -399,9 +431,13 @@ class PcbnewParser(EcadParser):
                     poly_set = zone.GetFilledPolysList()
                 except TypeError:
                     poly_set = zone.GetFilledPolysList(layer)
+                width = zone.GetMinThickness() * 1e-6
+                if (hasattr(zone, 'GetFilledPolysUseThickness') and
+                        not zone.GetFilledPolysUseThickness()):
+                    width = 0
                 zone_dict = {
                     "polygons": self.parse_poly_set(poly_set),
-                    "width": zone.GetMinThickness() * 1e-6,
+                    "width": width,
                 }
                 if self.config.include_nets:
                     zone_dict["net"] = zone.GetNetname()
@@ -421,27 +457,27 @@ class PcbnewParser(EcadParser):
         return nets
 
     @staticmethod
-    def module_to_component(module):
-        # type: (pcbnew.MODULE) -> Component
+    def footprint_to_component(footprint):
         try:
-            footprint = str(module.GetFPID().GetFootprintName())
+            footprint_name = str(footprint.GetFPID().GetFootprintName())
         except AttributeError:
-            footprint = str(module.GetFPID().GetLibItemName())
+            footprint_name = str(footprint.GetFPID().GetLibItemName())
 
-        attr = module.GetAttributes()
-        attr = {
-            0: 'Normal',
-            1: 'Normal+Insert',
-            2: 'Virtual'
-        }.get(attr, str(attr))
+        attr = 'Normal'
+        if hasattr(pcbnew, 'MOD_EXCLUDE_FROM_BOM'):
+            if footprint.GetAttributes() & pcbnew.MOD_EXCLUDE_FROM_BOM:
+                attr = 'Virtual'
+        elif hasattr(pcbnew, 'MOD_VIRTUAL'):
+            if footprint.GetAttributes() == pcbnew.MOD_VIRTUAL:
+                attr = 'Virtual'
         layer = {
             pcbnew.F_Cu: 'F',
             pcbnew.B_Cu: 'B',
-        }.get(module.GetLayer())
+        }.get(footprint.GetLayer())
 
-        return Component(module.GetReference(),
-                         module.GetValue(),
-                         footprint,
+        return Component(footprint.GetReference(),
+                         footprint.GetValue(),
+                         footprint_name,
                          layer,
                          attr)
 
@@ -460,7 +496,7 @@ class PcbnewParser(EcadParser):
         edges, bbox = self.parse_edges(self.board)
         if bbox is None:
             self.logger.error('Please draw pcb outline on the edges '
-                              'layer on sheet or any module before '
+                              'layer on sheet or any footprint before '
                               'generating BOM.')
             return None, None
         bbox = {
@@ -470,7 +506,6 @@ class PcbnewParser(EcadParser):
             "maxy": bbox.GetBottom() * 1e-6,
         }
 
-        pcb_modules = list(self.board.GetModules())
         drawings = self.get_all_drawings()
 
         pcbdata = {
@@ -480,7 +515,7 @@ class PcbnewParser(EcadParser):
                     drawings, pcbnew.F_SilkS, pcbnew.B_SilkS),
             "fabrication": self.parse_drawings_on_layers(
                     drawings, pcbnew.F_Fab, pcbnew.B_Fab),
-            "modules": self.parse_modules(pcb_modules),
+            "footprints": self.parse_footprints(),
             "metadata": {
                 "title": title,
                 "revision": title_block.GetRevision(),
@@ -499,7 +534,7 @@ class PcbnewParser(EcadParser):
                 pcbdata["zones"] = {'F': [], 'B': []}
         if self.config.include_nets and hasattr(self.board, "GetNetInfo"):
             pcbdata["nets"] = self.parse_netlist(self.board.GetNetInfo())
-        components = [self.module_to_component(m) for m in pcb_modules]
+        components = [self.footprint_to_component(f) for f in self.footprints]
 
         return pcbdata, components
 

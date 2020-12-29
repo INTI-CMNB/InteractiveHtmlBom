@@ -31,7 +31,7 @@ pcbdata = {
   // Describes footprints.
   // See footprint structure description below.
   // index of entry corresponds to component's numeric ID
-  "modules": [
+  "footprints": [
     footprint1,
     footprint2,
     ...
@@ -122,7 +122,18 @@ attribute.
 {
   "type": "segment",
   "start": [x, y],
-  "end": end,
+  "end": [x, y],
+  "width": width,
+}
+```
+
+### rect
+
+```js
+{
+  "type": "rect",
+  "start": [x, y], // coordinates of opposing corners
+  "end": [x, y],
   "width": width,
 }
 ```
@@ -201,10 +212,10 @@ attribute.
   "svgpath": svgpath,
   "height": height,
   "width": width,
-  // -1: justify left
+  // -1: justify left/top
   // 0: justify center
-  // 1: justify right
-  "horiz_justify": justify,
+  // 1: justify right/bot
+  "justify": [horizontal, vertical],
   "thickness": thickness,
   "attr": [
     // may include none, one or both
