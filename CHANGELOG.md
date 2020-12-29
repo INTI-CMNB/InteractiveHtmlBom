@@ -8,12 +8,20 @@ Note: only changes after the fork are listed.
 
 
 ## [Unreleased]
+
+## [2.3.4] - 2020-12-29
 ### Added
-- Middle mouse button canvas panning, now matches Pcbnew and Eeschema
+- Symbolic link support (#213).
+
+### Changed
+- Middle mouse button canvas panning, now matches Pcbnew and Eeschema.
+- Deleted Chinese language (#153) (was broken).
+- Use KiCad's own text rendering when possible.
 
 ### Fixed
 - Catch exceptions on parsing net/xml files (Fixes #166)
 - Return with error level != 0 for parsing errors.
+- Many details to support KiCad nightly.
 
 ## [2.3.3] - 2020-06-27
 ### Fixed

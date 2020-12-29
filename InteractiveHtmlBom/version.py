@@ -1,5 +1,5 @@
 # Update this when new version is tagged.
-LAST_TAG = 'v2.3.3'
+LAST_TAG = 'v2.3.4'
 
 import os
 plugin_path = os.path.realpath(os.path.dirname(__file__))
