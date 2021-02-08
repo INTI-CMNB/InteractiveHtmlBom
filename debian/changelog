@@ -1,3 +1,9 @@
+interactivehtmlbom.inti-cmnb (2.3.4-2) stable; urgency=medium
+
+  * Accept kicad-nightly as dependency.
+
+ -- Salvador E. Tropea <salvador@inti.gob.ar>  Mon, 08 Feb 2021 19:32:41 -0300
+
 interactivehtmlbom.inti-cmnb (2.3.4-1) stable; urgency=medium
 
   * Added symbolic link support (#213).
