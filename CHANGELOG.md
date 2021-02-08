@@ -9,6 +9,10 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.3.4-2] - 2021-02-08
+### Changed
+- Debian dependencies to accept kicad-nightly
+
 ## [2.3.4] - 2020-12-29
 ### Added
 - Symbolic link support (#213).
