@@ -9,6 +9,27 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.4.1]
+### Added
+- Better KiCad 6 support
+- Expand text vars in title block
+- Support for Eagle / Fusion 360 Electronics
+- Support for arc tracks
+- Description field parsing
+- Compression is now optional
+- BoM Column hiding and reordering
+- Darken when checked highlights footprints on render
+- Resizable column border
+- Configurable grouping
+- Sort references intelligently 
+
+### Changed
+- Standard fields optional
+
+### Fixed
+- Grouping issues
+- Workaround for lower canvas not drawn on print
+
 ## [2.3.4-2] - 2021-02-08
 ### Changed
 - Debian dependencies to accept kicad-nightly
