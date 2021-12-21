@@ -7,7 +7,7 @@ from .common import EcadParser, Component, BoundingBox
 if sys.version_info >= (3, 0):
     string_types = str
 else:
-    string_types = basestring  # noqa F821
+    string_types = basestring  # noqa F821: ignore undefined
 
 
 class EasyEdaParser(EcadParser):
