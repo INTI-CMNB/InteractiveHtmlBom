@@ -26,39 +26,39 @@ from InteractiveHtmlBom.errors import (ExitCodes)
 BOM_DIR = 'BoM'
 
 
-def test_ibom():
+def test_ibom_1(test_dir):
     prj = 'bom'
-    ctx = context.TestContext('Simple', prj, None, BOM_DIR)
+    ctx = context.TestContext(test_dir, 'Simple', prj, None, BOM_DIR)
     ctx.run()
     ctx.expect_out_file('ibom.html')
     ctx.clean_up()
 
 
-def test_ibom_utf8_filename():
+def test_ibom_utf8_filename(test_dir):
     prj = 'ñandú'
-    ctx = context.TestContext('Simple', prj, None, BOM_DIR)
+    ctx = context.TestContext(test_dir, 'Simple', prj, None, BOM_DIR)
     ctx.run(extra = ['--name-format', '%f_ibom'])
     ctx.expect_out_file('ñandú_ibom.html')
     ctx.clean_up()
 
 
-def test_wrong_file():
+def test_wrong_file(test_dir):
     prj = 'bom'
-    ctx = context.TestContext('WrongFile', prj, None, BOM_DIR)
+    ctx = context.TestContext(test_dir, 'WrongFile', prj, None, BOM_DIR)
     ctx.run(ExitCodes.ERROR_FILE_NOT_FOUND, extra=['bogus'], no_board_file=True)
     ctx.clean_up()
 
 
-def test_parser_error():
+def test_parser_error(test_dir):
     prj = 'ibom_fail'
-    ctx = context.TestContext('ParserError', prj, None, BOM_DIR)
+    ctx = context.TestContext(test_dir, 'ParserError', prj, None, BOM_DIR)
     ctx.run(ExitCodes.ERROR_PARSE)
     ctx.clean_up()
 
 
-def test_show_dialog():
+def test_show_dialog(test_dir):
     prj = 'bom'
-    ctx = context.TestContext('ShowDialog', prj, None, BOM_DIR)
+    ctx = context.TestContext(test_dir, 'ShowDialog', prj, None, BOM_DIR)
     ctx.run(ExitCodes.ERROR_NO_DISPLAY, extra=['--show-dialog'])
     ctx.clean_up()
 

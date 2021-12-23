@@ -21,7 +21,7 @@ MODE_PCB = 0
 
 class TestContext(object):
 
-    def __init__(self, test_name, board_name, config_name, sub_dir):
+    def __init__(self, test_dir, test_name, board_name, config_name, sub_dir):
         # We are using PCBs
         self.mode = MODE_PCB
         # The name used for the test output dirs and other logging
@@ -33,7 +33,7 @@ class TestContext(object):
         # The config file we'll use
         self._get_config_name(config_name)
         # The actual output dir for this run
-        self._set_up_output_dir(pytest.config.getoption('test_dir'))
+        self._set_up_output_dir(test_dir)
         # Where are we expecting to get the outputs (inside test_name)
         self.sub_dir = sub_dir
         # stdout and stderr from the run
