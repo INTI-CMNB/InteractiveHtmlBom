@@ -38,7 +38,7 @@ setup(name=NAME,
       #packages=[NAME_PKG, NAME_PKG+'/core', NAME_PKG+'/ecad', NAME_PKG+'/ecad/kicad_extra', NAME_PKG+'/dialog'],
       packages=find_packages(),
       package_dir={NAME_PKG: NAME_PKG},
-      package_data={NAME_PKG: ['icon.png','web/*']},
+      package_data={NAME_PKG: ['icon.png','web/*','dialog/bitmaps/*.png']},
       # This only works for system level installation.
       # KiCad ignores ~/.local/*
       data_files=[('share/kicad/scripting/plugins/'+NAME_PKG, ['settings_dialog.fbp','__init__.py'])],
