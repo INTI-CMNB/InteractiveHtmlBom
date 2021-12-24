@@ -9,7 +9,7 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
-## [2.4.1]
+## [2.4.1] - 2021-12-23
 ### Added
 - Better KiCad 6 support
 - Expand text vars in title block
