@@ -9,6 +9,10 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.4.1-2] - 2022-04-23
+### Fixed
+- No text variables expansion in title_block.date
+
 ## [2.4.1] - 2021-12-23
 ### Added
 - Better KiCad 6 support
