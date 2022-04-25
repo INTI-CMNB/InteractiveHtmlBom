@@ -9,6 +9,10 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.4.1-3] - 2022-04-25
+### Fixed
+- Problems with dimensions in the Edge.Cuts layer
+
 ## [2.4.1-2] - 2022-04-23
 ### Fixed
 - No text variables expansion in title_block.date
