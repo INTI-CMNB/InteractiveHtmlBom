@@ -321,13 +321,9 @@ class PcbnewParser(EcadParser):
             s = self.parse_shape(d)
         elif d.GetClass() in ["PTEXT", "MTEXT", "FP_TEXT", "PCB_TEXT"]:
             s = self.parse_text(d)
-        elif d.GetClass().startswith("PCB_DIM"):
-            try:
-                result.append(self.parse_dimension(d))
-                s = self.parse_text(d.Text())
-            except TypeError:
-                # KiCad 6.0.4 GetShapes() isn't usable from Python
-                pass
+        elif d.GetClass().startswith("PCB_DIM") and hasattr(pcbnew, "VECTOR_SHAPEPTR"):
+            result.append(self.parse_dimension(d))
+            s = self.parse_text(d.Text())
         else:
             self.logger.info("Unsupported drawing class %s, skipping",
                              d.GetClass())
