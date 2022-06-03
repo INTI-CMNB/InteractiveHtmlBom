@@ -42,7 +42,7 @@ setup(name=NAME,
       # This only works for system level installation.
       # KiCad ignores ~/.local/*
       data_files=[('share/kicad/scripting/plugins/'+NAME_PKG, ['settings_dialog.fbp','__init__.py'])],
-      scripts=['InteractiveHtmlBom/generate_interactive_bom.py'],
+      entry_points={'console_scripts': ['generate_interactive_bom.py = InteractiveHtmlBom.generate_interactive_bom:main']},
       #install_requires=['wx'],
       classifiers = ['Development Status :: 5 - Production/Stable',
                      'Environment :: Console',
