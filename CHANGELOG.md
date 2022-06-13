@@ -9,6 +9,19 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.5.0] - 2022-06-13
+### Added
+- Hotkeys link and rotate board with l/r arrows
+- CSV/TXT export according to #289
+- Implement local/global settings
+
+### Fixed
+- Rectangles in angled footprints
+- Compatibility with wxWidgets 3.1.6
+
+### Changed
+- Resize plugin icon to 24x24 and pixel align again
+
 ## [2.4.1-4] - 2022-05-20
 ### Added
 - Command line option for version
