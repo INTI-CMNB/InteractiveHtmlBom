@@ -27,6 +27,7 @@ and can be packaged with documentation of your project or hosted anywhere on the
 ## Installation and Usage
 
 Important: when installing this fork to be used with `KiBot` you must be sure the `generate_interactive_bom.py` is in your path.
+Or at least that the plug-in is accessible from KiCad (`KiBot` also looks in the KiCad plug-in dirs).
 For Debian/Ubuntu systems the simplest way is to install the Debian package provided by this fork, check the [releases section](https://github.com/INTI-CMNB/InteractiveHtmlBom/releases)
 
 See [project wiki](https://github.com/openscopeproject/InteractiveHtmlBom/wiki) for instructions.
