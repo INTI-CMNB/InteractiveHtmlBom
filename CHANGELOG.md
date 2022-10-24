@@ -9,6 +9,15 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.5.0-2] - 2022-10-24
+### Added
+- Offset back rotation 180 degrees option
+- Natural integer sorting for extra fields
+
+### Fixed
+- Import settings
+- DNP and board variant field doesn't need to be specified in extra fields
+
 ## [2.5.0] - 2022-06-13
 ### Added
 - Hotkeys link and rotate board with l/r arrows

@@ -1,3 +1,13 @@
+interactivehtmlbom.inti-cmnb (2.5.0-2) stable; urgency=medium
+
+  * Added offset back rotation 180 degrees option
+  * Added natural integer sorting for extra fields
+  * Fixed import settings
+  * Now DNP and board variant field doesn't need to be specified in extra
+    fields
+
+ -- Salvador E. Tropea <salvador@inti.gob.ar>  Mon, 24 Oct 2022 08:56:26 -0300
+
 interactivehtmlbom.inti-cmnb (2.5.0-1) stable; urgency=medium
 
   * Hotkeys link and rotate board with l/r arrows
