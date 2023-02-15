@@ -9,6 +9,11 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.5.0-3] - 2022-02-15
+### Added
+- Create hyperlinks for URLs
+- Support for more KiCad 7 new stuff
+
 ## [2.5.0-2] - 2022-10-24
 ### Added
 - Offset back rotation 180 degrees option
