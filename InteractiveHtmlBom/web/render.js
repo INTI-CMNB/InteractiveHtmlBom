@@ -71,16 +71,18 @@ function drawText(ctx, text, color) {
     var offsetx = -lineWidth * (text.justify[0] + 1) / 2;
     var inOverbar = false;
     for (var j = 0; j < txt[i].length; j++) {
-      if (txt[i][j] == '\t') {
-        var fourSpaces = 4 * pcbdata.font_data[' '].w * text.width;
-        offsetx += fourSpaces - offsetx % fourSpaces;
-        continue;
-      } else if (txt[i][j] == '~') {
-        j++;
-        if (j == txt[i].length)
-          break;
-        if (txt[i][j] != '~') {
-          inOverbar = !inOverbar;
+      if (config.kicad_text_formatting) {
+        if (txt[i][j] == '\t') {
+          var fourSpaces = 4 * pcbdata.font_data[' '].w * text.width;
+          offsetx += fourSpaces - offsetx % fourSpaces;
+          continue;
+        } else if (txt[i][j] == '~') {
+          j++;
+          if (j == txt[i].length)
+            break;
+          if (txt[i][j] != '~') {
+            inOverbar = !inOverbar;
+          }
         }
       }
       var glyph = pcbdata.font_data[txt[i][j]];
@@ -327,6 +329,7 @@ function drawFootprint(ctx, layer, scalefactor, footprint, colors, highlight, ou
       ctx.fillRect(0, 0, ...footprint.bbox.size);
       ctx.globalAlpha = 1;
       ctx.strokeStyle = colors.pad;
+      ctx.lineWidth = 3 / scalefactor;
       ctx.strokeRect(0, 0, ...footprint.bbox.size);
       ctx.restore();
     }
@@ -337,6 +340,7 @@ function drawFootprint(ctx, layer, scalefactor, footprint, colors, highlight, ou
       drawDrawing(ctx, scalefactor, drawing.drawing, colors.pad);
     }
   }
+  ctx.lineWidth = 3 / scalefactor;
   // draw pads
   if (settings.renderPads) {
     for (var pad of footprint.pads) {
@@ -440,7 +444,7 @@ function drawZones(canvas, layer, color, highlight) {
       zone.path2d = getPolygonsPath(zone);
     }
     if (highlight && highlightedNet != zone.net) continue;
-    ctx.fill(zone.path2d);
+    ctx.fill(zone.path2d, zone.fillrule || "nonzero");
     if (zone.width > 0) {
       ctx.lineWidth = zone.width;
       ctx.stroke(zone.path2d);
