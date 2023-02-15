@@ -1,3 +1,10 @@
+interactivehtmlbom.inti-cmnb (2.5.0-3) stable; urgency=medium
+
+  * Create hyperlinks for URLs
+  * Support for some KiCad 7 new stuff
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Wed, 15 Feb 2023 07:47:31 -0300
+
 interactivehtmlbom.inti-cmnb (2.5.0-2) stable; urgency=medium
 
   * Added offset back rotation 180 degrees option
