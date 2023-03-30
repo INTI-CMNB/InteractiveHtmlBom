@@ -9,6 +9,13 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.6.0-1] - 2022-03-30
+### Added
+- Support for current KiCad 7.99
+
+### Changed
+- Suppressed some distracting messages
+
 ## [2.5.0-3] - 2022-02-15
 ### Added
 - Create hyperlinks for URLs

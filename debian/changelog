@@ -1,3 +1,10 @@
+interactivehtmlbom.inti-cmnb (2.6.0-1) stable; urgency=medium
+
+  * New upstream release
+  * Support for current KiCad 7.99
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Thu, 30 Mar 2023 13:14:15 -0300
+
 interactivehtmlbom.inti-cmnb (2.5.0-3) stable; urgency=medium
 
   * Create hyperlinks for URLs
