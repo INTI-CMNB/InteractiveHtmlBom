@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pcbnew
 
-from .common import EcadParser, Component
+from .common import EcadParser, Component, ExtraFieldData
 from .kicad_extra import find_latest_schematic_data, parse_schematic_data
 from .svgpath import create_path
 from ..core import ibom
@@ -29,22 +29,36 @@ class PcbnewParser(EcadParser):
             return self.parse_extra_data_from_pcb()
         if os.path.splitext(file_name)[1] == '.kicad_pcb':
             return None
-        return parse_schematic_data(file_name)
+
+        data = parse_schematic_data(file_name)
+
+        return ExtraFieldData(data[0], data[1])
+
+    @staticmethod
+    def get_footprint_fields(f):
+        # type: (pcbnew.FOOTPRINT) -> dict
+        if hasattr(f, "GetProperties"):
+            return f.GetProperties()
+        if hasattr(f, "GetFields"):
+            return f.GetFieldsShownText()
+        return {}
 
     def parse_extra_data_from_pcb(self):
         field_set = set()
-        comp_dict = {}
+        by_ref = {}
+        by_index = {}
 
-        for f in self.footprints:  # type: pcbnew.FOOTPRINT
-            props = f.GetProperties()
+        for (i, f) in enumerate(self.footprints):
+            props = self.get_footprint_fields(f)
+            by_index[i] = props
             ref = f.GetReference()
-            ref_fields = comp_dict.setdefault(ref, {})
+            ref_fields = by_ref.setdefault(ref, {})
 
             for k, v in props.items():
                 field_set.add(k)
                 ref_fields[k] = v
 
-        return list(field_set), comp_dict
+        return ExtraFieldData(list(field_set), by_ref, by_index)
 
     def latest_extra_data(self, extra_dirs=None):
         base_name = os.path.splitext(os.path.basename(self.file_name))[0]
@@ -685,8 +699,6 @@ class PcbnewParser(EcadParser):
             raise ParsingException(
                 'Failed parsing %s' % self.config.extra_data_file)
 
-        extra_field_data = extra_field_data[1] if extra_field_data else None
-
         title_block = self.board.GetTitleBlock()
         title = title_block.GetTitle()
         revision = title_block.GetRevision()
@@ -752,26 +764,33 @@ class PcbnewParser(EcadParser):
         if self.config.include_nets and hasattr(self.board, "GetNetInfo"):
             pcbdata["nets"] = self.parse_netlist(self.board.GetNetInfo())
 
-        warning_shown = False
         if extra_field_data and need_extra_fields:
-            e = []
-            for f in self.footprints:
-                e.append(extra_field_data.get(f.GetReference(), {}))
-                if f.GetReference() not in extra_field_data:
-                    # Some components are on pcb but not in schematic data.
-                    # Show a warning about possibly outdated netlist/xml file.
-                    self.logger.warn(
-                        'Component %s is missing from schematic data.'
-                        % f.GetReference())
-                    warning_shown = True
+            extra_fields = extra_field_data.fields_by_index
+            if extra_fields:
+                extra_fields = extra_fields.values()
+
+            if extra_fields is None:
+                extra_fields = []
+                field_map = extra_field_data.fields_by_ref
+                warning_shown = False
+
+                for f in self.footprints:
+                    extra_fields.append(field_map.get(f.GetReference(), {}))
+                    if f.GetReference() not in field_map:
+                        # Some components are on pcb but not in schematic data.
+                        # Show a warning about outdated extra data file.
+                        self.logger.warn(
+                            'Component %s is missing from schematic data.'
+                            % f.GetReference())
+                        warning_shown = True
+
+                if warning_shown:
+                    self.logger.warn('Netlist/xml file is likely out of date.')
         else:
-            e = [{}] * len(self.footprints)
+            extra_fields = [{}] * len(self.footprints)
 
-        if warning_shown:
-            self.logger.warn('Netlist/xml file is likely out of date.')
-
-        components = [self.footprint_to_component(f, ee)
-                      for (f, ee) in zip(self.footprints, e)]
+        components = [self.footprint_to_component(f, e)
+                      for (f, e) in zip(self.footprints, extra_fields)]
 
         return pcbdata, components
 

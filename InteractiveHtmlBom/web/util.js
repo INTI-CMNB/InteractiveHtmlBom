@@ -36,10 +36,10 @@ function writeStorage(key, value) {
 }
 
 function fancyDblClickHandler(el, onsingle, ondouble) {
-  return function() {
+  return function () {
     if (el.getAttribute("data-dblclick") == null) {
       el.setAttribute("data-dblclick", 1);
-      setTimeout(function() {
+      setTimeout(function () {
         if (el.getAttribute("data-dblclick") == 1) {
           onsingle();
         }
@@ -171,7 +171,7 @@ var units = {
     "FARAD", "Farad", "farad",
     "HENRY", "Henry", "henry"
   ],
-  getMultiplier: function(s) {
+  getMultiplier: function (s) {
     if (this.prefixes.giga.includes(s)) return 1e9;
     if (this.prefixes.mega.includes(s)) return 1e6;
     if (this.prefixes.kilo.includes(s)) return 1e3;
@@ -360,7 +360,7 @@ function loadSettings() {
   var input = document.createElement("input");
   input.type = "file";
   input.accept = ".settings.json";
-  input.onchange = function(e) {
+  input.onchange = function (e) {
     var file = e.target.files[0];
     var reader = new FileReader();
     reader.onload = readerEvent => {
@@ -388,10 +388,10 @@ function loadSettings() {
         var currentMetadata = JSON.stringify(pcbdata.metadata, null, 4);
         var fileMetadata = JSON.stringify(newSettings.pcbmetadata, null, 4);
         if (!confirm(
-            `Settins file metadata does not match current metadata.\n\n` +
-            `Page metadata:\n${currentMetadata}\n\n` +
-            `Settings file metadata:\n${fileMetadata}\n\n` +
-            `Press OK if you would like to import settings anyway.`)) {
+          `Settins file metadata does not match current metadata.\n\n` +
+          `Page metadata:\n${currentMetadata}\n\n` +
+          `Settings file metadata:\n${fileMetadata}\n\n` +
+          `Press OK if you would like to import settings anyway.`)) {
           return;
         }
       }
@@ -400,6 +400,23 @@ function loadSettings() {
     reader.readAsText(file, 'UTF-8');
   }
   input.click();
+}
+
+function resetSettings() {
+  if (!confirm(
+    `This will reset all checkbox states and other settings.\n\n` +
+    `Press OK if you want to continue.`)) {
+    return;
+  }
+  if (storage) {
+    var keys = [];
+    for (var i = 0; i < storage.length; i++) {
+      var key = storage.key(i);
+      if (key.startsWith(storagePrefix)) keys.push(key);
+    }
+    for (var key of keys) storage.removeItem(key);
+  }
+  location.reload();
 }
 
 function overwriteSettings(newSettings) {
@@ -435,7 +452,7 @@ function overwriteSettings(newSettings) {
   setDarkMode(settings.darkMode);
   document.getElementById("darkmodeCheckbox").checked = settings.darkMode;
   setHighlightPin1(settings.highlightpin1);
-  document.getElementById("highlightpin1Checkbox").checked = settings.highlightpin1;
+  document.forms.highlightpin1.highlightpin1.value = settings.highlightpin1;
   writeStorage("boardRotation", settings.boardRotation);
   document.getElementById("boardRotation").value = settings.boardRotation / 5;
   document.getElementById("rotationDegree").textContent = settings.boardRotation;
@@ -469,13 +486,13 @@ function dataURLtoBlob(dataurl) {
 }
 
 var settings = {
-  canvaslayout: "default",
-  bomlayout: "default",
+  canvaslayout: "FB",
+  bomlayout: "left-right",
   bommode: "grouped",
   checkboxes: [],
   checkboxStoredRefs: {},
   darkMode: false,
-  highlightpin1: false,
+  highlightpin1: "none",
   redrawOnDrag: true,
   boardRotation: 0,
   offsetBackRotation: false,
@@ -488,7 +505,8 @@ var settings = {
   renderTracks: true,
   renderZones: true,
   columnOrder: [],
-  hiddenColumns: []
+  hiddenColumns: [],
+  netColors: {},
 }
 
 function initDefaults() {
@@ -501,6 +519,9 @@ function initDefaults() {
   }
   settings.bommode = readStorage("bommode");
   if (settings.bommode === null) {
+    settings.bommode = "grouped";
+  }
+  if (settings.bommode == "netlist" && !pcbdata.nets) {
     settings.bommode = "grouped";
   }
   if (!["grouped", "ungrouped", "netlist"].includes(settings.bommode)) {
@@ -516,6 +537,12 @@ function initDefaults() {
   }
   settings.checkboxes = bomCheckboxes.split(",").filter((e) => e);
   document.getElementById("bomCheckboxes").value = bomCheckboxes;
+
+  var highlightpin1 = readStorage("highlightpin1") || config.highlight_pin1;
+  if (highlightpin1 === "false") highlightpin1 = "none";
+  if (highlightpin1 === "true") highlightpin1 = "all";
+  setHighlightPin1(highlightpin1);
+  document.forms.highlightpin1.highlightpin1.value = highlightpin1;
 
   settings.markWhenChecked = readStorage("markWhenChecked") || "";
   populateMarkWhenCheckedOptions();
@@ -547,7 +574,6 @@ function initDefaults() {
   initBooleanSetting("dnpOutline", false, "dnpOutlineCheckbox", dnpOutline);
   initBooleanSetting("redrawOnDrag", config.redraw_on_drag, "dragCheckbox", setRedrawOnDrag);
   initBooleanSetting("darkmode", config.dark_mode, "darkmodeCheckbox", setDarkMode);
-  initBooleanSetting("highlightpin1", config.highlight_pin1, "highlightpin1Checkbox", setHighlightPin1);
 
   var fields = ["checkboxes", "References"].concat(config.fields).concat(["Quantity"]);
   var hcols = JSON.parse(readStorage("hiddenColumns"));
@@ -575,6 +601,8 @@ function initDefaults() {
   document.getElementById("boardRotation").value = settings.boardRotation / 5;
   document.getElementById("rotationDegree").textContent = settings.boardRotation;
   initBooleanSetting("offsetBackRotation", config.offset_back_rotation, "offsetBackRotationCheckbox", setOffsetBackRotation);
+
+  settings.netColors = JSON.parse(readStorage("netColors")) || {};
 }
 
 // Helper classes for user js callbacks.
@@ -588,14 +616,14 @@ const IBOM_EVENT_TYPES = {
 
 const EventHandler = {
   callbacks: {},
-  init: function() {
+  init: function () {
     for (eventType of Object.values(IBOM_EVENT_TYPES))
       this.callbacks[eventType] = [];
   },
-  registerCallback: function(eventType, callback) {
+  registerCallback: function (eventType, callback) {
     this.callbacks[eventType].push(callback);
   },
-  emitEvent: function(eventType, eventArgs) {
+  emitEvent: function (eventType, eventArgs) {
     event = {
       eventType: eventType,
       args: eventArgs,
