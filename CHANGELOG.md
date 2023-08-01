@@ -9,6 +9,19 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.7.0-1] - 2022-08-01
+### Added
+- Reset button for settings/checkboxes
+- Configurable net colors
+
+### Changed
+- Limit fields grid max height
+
+### Fixed
+- Support for current KiCad 7.99
+- Minor dialog UI details
+- Filter not working when extra fields are ints
+
 ## [2.6.0-1] - 2022-03-30
 ### Added
 - Support for current KiCad 7.99
