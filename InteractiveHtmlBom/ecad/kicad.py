@@ -37,11 +37,18 @@ class PcbnewParser(EcadParser):
     @staticmethod
     def get_footprint_fields(f):
         # type: (pcbnew.FOOTPRINT) -> dict
+        props = {}
         if hasattr(f, "GetProperties"):
-            return f.GetProperties()
+            props = f.GetProperties()
         if hasattr(f, "GetFields"):
-            return f.GetFieldsShownText()
-        return {}
+            props = f.GetFieldsShownText()
+        if "dnp" in props and props["dnp"] == "":
+            del props["dnp"]
+            props["kicad_dnp"] = "DNP"
+        if hasattr(f, "IsDNP"):
+            if f.IsDNP():
+                props["kicad_dnp"] = "DNP"
+        return props
 
     def parse_extra_data_from_pcb(self):
         field_set = set()
@@ -254,8 +261,7 @@ class PcbnewParser(EcadParser):
                 "svgpath": create_path(lines)
             }
         elif hasattr(d, 'GetEffectiveTextShape'):
-            shape = d.GetEffectiveTextShape(
-                aTriangulate=False)  # type: pcbnew.SHAPE_COMPOUND
+            shape = d.GetEffectiveTextShape(False)  # type: pcbnew.SHAPE_COMPOUND
             segments = []
             polygons = []
             for s in shape.GetSubshapes():
@@ -345,7 +351,7 @@ class PcbnewParser(EcadParser):
         s = None
         if d.GetClass() in ["DRAWSEGMENT", "MGRAPHIC", "PCB_SHAPE"]:
             s = self.parse_shape(d)
-        elif d.GetClass() in ["PTEXT", "MTEXT", "FP_TEXT", "PCB_TEXT"]:
+        elif d.GetClass() in ["PTEXT", "MTEXT", "FP_TEXT", "PCB_TEXT", "PCB_FIELD"]:
             s = self.parse_text(d)
         elif (d.GetClass().startswith("PCB_DIM")
               and hasattr(pcbnew, "VECTOR_SHAPEPTR")):
@@ -569,6 +575,9 @@ class PcbnewParser(EcadParser):
         return footprints
 
     def parse_tracks(self, tracks):
+        tent_vias = True
+        if hasattr(self.board, "GetTentVias"):
+            tent_vias = self.board.GetTentVias()
         result = {pcbnew.F_Cu: [], pcbnew.B_Cu: []}
         for track in tracks:
             if track.GetClass() in ["VIA", "PCB_VIA"]:
@@ -578,6 +587,8 @@ class PcbnewParser(EcadParser):
                     "width": track.GetWidth() * 1e-6,
                     "net": track.GetNetname(),
                 }
+                if not tent_vias:
+                    track_dict["drillsize"] = track.GetDrillValue() * 1e-6
                 for layer in [pcbnew.F_Cu, pcbnew.B_Cu]:
                     if track.IsOnLayer(layer):
                         result[layer].append(track_dict)

@@ -66,20 +66,21 @@ class FusionEagleParser(EcadParser):
             rad = -rad
         return rad
 
-    def _curve_to_svgparams(self, el, x=0, y=0, angle=0):
+    def _curve_to_svgparams(self, el, x=0, y=0, angle=0, mirrored=False):
         _x1 = float(el.attrib['x1'])
         _x2 = float(el.attrib['x2'])
         _y1 = -float(el.attrib['y1'])
         _y2 = -float(el.attrib['y2'])
 
-        dx1, dy1 = self._rotate(_x1, _y1, -angle)
-        dx2, dy2 = self._rotate(_x2, _y2, -angle)
+        dx1, dy1 = self._rotate(_x1, _y1, -angle, mirrored)
+        dx2, dy2 = self._rotate(_x2, _y2, -angle, mirrored)
 
         x1, y1 = x + dx1, -y + dy1
         x2, y2 = x + dx2, -y + dy2
 
         chord = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
         theta = float(el.attrib['curve'])
+        theta = -theta if mirrored else theta
         r = abs(0.5 * chord / math.sin(math.radians(theta) / 2))
         la = 0 if abs(theta) < 180 else 1
         sw = 0 if theta > 0 else 1
@@ -93,8 +94,8 @@ class FusionEagleParser(EcadParser):
             'y2': y2
         }
 
-    def _curve_to_svgpath(self, el, x=0, y=0, angle=0):
-        p = self._curve_to_svgparams(el, x, y, angle)
+    def _curve_to_svgpath(self, el, x=0, y=0, angle=0, mirrored=False):
+        p = self._curve_to_svgparams(el, x, y, angle, mirrored)
         return 'M {x1} {y1} A {r} {r} 0 {la} {sw} {x2} {y2}'.format(**p)
 
     @staticmethod
@@ -266,6 +267,8 @@ class FusionEagleParser(EcadParser):
                 trk['width'] = float(el.attrib['drill']) + 2 * self.min_via_w \
                     if 'diameter' not in el.attrib else float(
                     el.attrib['diameter'])
+                if float(el.attrib['drill']) >= self.min_drill_via_untented:
+                    trk['drillsize'] = float(el.attrib['drill'])
                 self.pcbdata['tracks']['F'].append(trk)
                 self.pcbdata['tracks']['B'].append(trk)
 
@@ -512,7 +515,8 @@ class FusionEagleParser(EcadParser):
                         dwg = {
                             'type': 'arc',
                             'width': float(el.attrib['width']),
-                            'svgpath': self._curve_to_svgpath(el, x, y, angle)
+                            'svgpath': self._curve_to_svgpath(el, x, y, angle,
+                                                              mirrored)
                         }
                     else:
                         dwg = {
@@ -612,7 +616,7 @@ class FusionEagleParser(EcadParser):
             }
             justify = [alignments[ss] for ss in j[::-1]]
         if (90 < angle <= 270 and not spin) or \
-                (-90 >= angle >= -270 and not spin):
+                (-90 > angle >= -270 and not spin):
             angle += 180
             justify = [-j for j in justify]
 
@@ -688,21 +692,57 @@ class FusionEagleParser(EcadParser):
             return
 
         if poly.tag == 'polygonpour':
-            segs = poly.find('polygonfilldetails').find('polygonshape') \
-                .find('polygonoutlinesegments')
+            shapes = poly.find('polygonfilldetails').findall('polygonshape')
+            if shapes:
+                zone = {'polygons': [],
+                        'fillrule': 'evenodd'}
+                for shape in shapes:
+                    segs = shape.find('polygonoutlinesegments')
+                    zone['polygons'].append(self._segments_to_polygon(segs))
+                    holelist = shape.find('polygonholelist')
+                    if holelist:
+                        holes = holelist.findall('polygonholesegments')
+                        for hole in holes:
+                            zone['polygons'].append(self._segments_to_polygon(hole))
+                if self.config.include_nets:
+                    zone['net'] = net
+                dest.append(zone)
         else:
-            segs = poly
-
-        zone = {'polygons': []}
-        zone['polygons'].append(self._segments_to_polygon(segs))
-        if self.config.include_nets:
-            zone['net'] = net
-        dest.append(zone)
+            zone = {'polygons': []}
+            zone['polygons'].append(self._segments_to_polygon(poly))
+            if self.config.include_nets:
+                zone['net'] = net
+            dest.append(zone)
 
     def _add_parsed_font_data(self):
         for (c, wl) in self.font_parser.get_parsed_font().items():
             if c not in self.pcbdata['font_data']:
                 self.pcbdata['font_data'][c] = wl
+
+    def _parse_param_length(self, name, root, default):
+        # parse named parameter (typically a design rule) assuming it is in
+        # length units (mil or mm)
+        p = [el.attrib['value'] for el in root.iter('param') if
+              el.attrib['name'] == name]
+        if len(p) == 0:
+            self.logger.warning("{0} not found, defaulting to {1}"
+                                .format(name, default))
+            return default
+        else:
+            if len(p) > 1:
+                self.logger.warning(
+                    "Multiple {0} found, using first occurrence".format(name))
+            p = p[0]
+            p_val = float(''.join(d for d in p if d in string.digits + '.'))
+            p_units = (''.join(d for d in p if d in string.ascii_lowercase))
+
+            if p_units == 'mm':
+                return p_val
+            elif p_units == 'mil':
+                return p_val * 0.0254
+            else:
+                self.logger.error("Unsupported units {0} on {1}"
+                                  .format(p_units, name))
 
     def parse(self):
         ext = os.path.splitext(self.file_name)[1]
@@ -741,28 +781,16 @@ class FusionEagleParser(EcadParser):
         # Build library mapping elements' pads to nets
         self._parse_pad_nets(signals)
 
-        # Determine minimum via annular ring from board design rules
-        # (Needed in order to calculate through-hole pad diameters correctly)
-        mv = [el.attrib['value'] for el in root.iter('param') if
-              el.attrib['name'] == 'rlMinViaOuter']
-        if len(mv) == 0:
-            self.logger.warning("rlMinViaOuter not found, defaulting to 0")
-            self.min_via_w = 0
-        else:
-            if len(mv) > 1:
-                self.logger.warning(
-                    "Multiple rlMinViaOuter found, using first occurrence")
-            mv = mv[0]
-            mv_val = float(''.join(d for d in mv if d in string.digits + '.'))
-            mv_units = (''.join(d for d in mv if d in string.ascii_lowercase))
+        # Parse needed design rules
 
-            if mv_units == 'mm':
-                self.min_via_w = mv_val
-            elif mv_units == 'mil':
-                self.min_via_w = mv_val * 0.0254
-            else:
-                self.logger.error("Unsupported units %s on rlMinViaOuter",
-                                  mv_units)
+        # Minimum via annular ring
+        # (Needed in order to calculate through-hole pad diameters correctly)
+        self.min_via_w = (
+            self._parse_param_length('rlMinViaOuter', root, default=0))
+
+        # Minimum drill diameter above which vias will be un-tented
+        self.min_drill_via_untented = (
+            self._parse_param_length('mlViaStopLimit', root, default=0))
 
         # Signals --> nets
         if self.config.include_nets:
@@ -781,8 +809,6 @@ class FusionEagleParser(EcadParser):
                     self._add_track(via, signal.attrib['name'])
                 for poly in signal.iter('polygonpour'):
                     self._add_zone(poly, signal.attrib['name'])
-                for poly in signal.iter('polygon'):
-                    self._add_zone(poly, signal.attrib['name'])
 
         # Elements --> components, footprints, silkscreen, edges
         for el in elements.iter('element'):
@@ -800,7 +826,7 @@ class FusionEagleParser(EcadParser):
                                  'value'],
                              footprint=el.attrib['package'],
                              layer=layer,
-                             attr=None,
+                             attr=None if populate else 'Virtual',
                              extra_fields=extra_fields)
 
             # For component, get footprint data
@@ -852,8 +878,7 @@ class FusionEagleParser(EcadParser):
                                     populate)
             self._element_refdes_to_silk(el, package)
 
-            if populate:
-                self.components.append(comp)
+            self.components.append(comp)
 
         # Edges & silkscreen (independent of elements)
         for el in plain.iter():

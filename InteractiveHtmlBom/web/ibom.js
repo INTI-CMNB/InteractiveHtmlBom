@@ -271,7 +271,7 @@ function netColorChangeHandler(net) {
 
 function netColorRightClick(net) {
   return (event) => {
-    if(event.button == 2) {
+    if (event.button == 2) {
       event.preventDefault();
       event.stopPropagation();
 
@@ -921,13 +921,15 @@ function changeBomLayout(layout) {
       }
       document.getElementById("frontcanvas").style.display = "none";
       document.getElementById("backcanvas").style.display = "none";
-      document.getElementById("bot").style.height = "";
+      document.getElementById("topmostdiv").style.height = "";
+      document.getElementById("topmostdiv").style.display = "block";
       break;
     case 'top-bottom':
       document.getElementById("tb-btn").classList.add("depressed");
       document.getElementById("frontcanvas").style.display = "";
       document.getElementById("backcanvas").style.display = "";
-      document.getElementById("bot").style.height = "calc(100% - 80px)";
+      document.getElementById("topmostdiv").style.height = "100%";
+      document.getElementById("topmostdiv").style.display = "flex";
       document.getElementById("bomdiv").classList.remove("split-horizontal");
       document.getElementById("canvasdiv").classList.remove("split-horizontal");
       document.getElementById("frontcanvas").classList.add("split-horizontal");
@@ -954,7 +956,8 @@ function changeBomLayout(layout) {
       document.getElementById("lr-btn").classList.add("depressed");
       document.getElementById("frontcanvas").style.display = "";
       document.getElementById("backcanvas").style.display = "";
-      document.getElementById("bot").style.height = "calc(100% - 80px)";
+      document.getElementById("topmostdiv").style.height = "100%";
+      document.getElementById("topmostdiv").style.display = "flex";
       document.getElementById("bomdiv").classList.add("split-horizontal");
       document.getElementById("canvasdiv").classList.add("split-horizontal");
       document.getElementById("frontcanvas").classList.remove("split-horizontal");
@@ -1154,7 +1157,7 @@ function updateCheckboxStats(checkbox) {
   td.lastChild.innerHTML = checked + "/" + total + " (" + Math.round(percent) + "%)";
 }
 
-function constrain(number, min, max){
+function constrain(number, min, max) {
   return Math.min(Math.max(parseInt(number), min), max);
 }
 
@@ -1180,15 +1183,15 @@ document.onkeydown = function (e) {
       break;
     case "ArrowLeft":
     case "ArrowRight":
-      if (document.activeElement.type != "text"){
+      if (document.activeElement.type != "text") {
         e.preventDefault();
         let boardRotationElement = document.getElementById("boardRotation")
         settings.boardRotation = parseInt(boardRotationElement.value);  // degrees / 5
-        if (e.key == "ArrowLeft"){
-            settings.boardRotation += 3;  // 15 degrees
+        if (e.key == "ArrowLeft") {
+          settings.boardRotation += 3;  // 15 degrees
         }
-        else{
-            settings.boardRotation -= 3;
+        else {
+          settings.boardRotation -= 3;
         }
         settings.boardRotation = constrain(settings.boardRotation, boardRotationElement.min, boardRotationElement.max);
         boardRotationElement.value = settings.boardRotation
@@ -1246,6 +1249,18 @@ function hideNetlistButton() {
   document.getElementById("bom-ungrouped-btn").classList.remove("middle-button");
   document.getElementById("bom-ungrouped-btn").classList.add("right-most-button");
   document.getElementById("bom-netlist-btn").style.display = "none";
+}
+
+function topToggle() {
+  var top = document.getElementById("top");
+  var toptoggle = document.getElementById("toptoggle");
+  if (top.style.display === "none") {
+    top.style.display = "flex";
+    toptoggle.classList.remove("flipped");
+  } else {
+    top.style.display = "none";
+    toptoggle.classList.add("flipped");
+  }
 }
 
 window.onload = function (e) {
