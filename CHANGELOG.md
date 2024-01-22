@@ -9,6 +9,19 @@ Note: only changes after the fork are listed.
 
 ## [Unreleased]
 
+## [2.8.1-1] - 2024-01-22
+### Added
+- Better support for KiCad 7.99
+- Toggle to hide top bar
+- Implement untented vias for kicad
+- KiCad 7 native dnp field support
+    
+### Fixed
+- Handling empty string for board variant
+- Tracks sometimes overlapping via holes
+- Handling of complex polygonpours
+- Extra data file change not updating fields
+
 ## [2.7.0-1] - 2022-08-01
 ### Added
 - Reset button for settings/checkboxes

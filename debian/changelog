@@ -1,3 +1,17 @@
+interactivehtmlbom.inti-cmnb (2.8.1-1) stable; urgency=medium
+
+  * New upstream release
+  * Better support for KiCad 7.99
+  * Added toggle to hide top bar
+  * Implemented untented vias for kicad
+  * Added KiCad 7 native dnp field support
+  * Fixed handling empty string for board variant
+  * Fixed tracks sometimes overlapping via holes
+  * Fixed handling of complex polygonpours
+  * Fixed extra data file change not updating fields
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Mon, 22 Jan 2024 08:17:29 -0300
+
 interactivehtmlbom.inti-cmnb (2.7.0-1) stable; urgency=medium
 
   * New upstream release
