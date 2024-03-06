@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note: only changes after the fork are listed.
 
 
-## [Unreleased]
+## [2.9.0-1] - 2024-03-06
+### Added
+- Extra field support to EasyEDA parser
 
 ## [2.8.1-1] - 2024-01-22
 ### Added
