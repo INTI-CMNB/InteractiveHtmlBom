@@ -40,7 +40,7 @@ jobs:
         coveralls
     - name: Store results
       if: ${{ always() }}
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: Test_Output
         path: output
