@@ -1,3 +1,16 @@
+interactivehtmlbom.inti-cmnb (2.10.0-1) stable; urgency=medium
+
+  * Add padstack support for kicad 9
+  * Fix BB computing for arc (typo in xc/yc, forgot radius)
+  * Add support of rectangle pad hole
+  * Fix bom export having "null" column
+  * Add via support for easyeda
+  * Added a setting Check box to "highlight row on click"
+  * Use whole checkbox cell for touch events
+  * Fix dark mode background in bom only mode
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Mon, 14 Apr 2025 12:50:45 -0300
+
 interactivehtmlbom.inti-cmnb (2.9.0-2) stable; urgency=medium
 
   * Fix polygons inside footprints for kicad 8

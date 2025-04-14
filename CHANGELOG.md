@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note: only changes after the fork are listed.
 
 
+## [2.10.0-1] - 2025-04-14
+### Fixed
+- Add padstack support for kicad 9
+- Fix BB computing for arc (typo in xc/yc, forgot radius)
+- Add support of rectangle pad hole
+- Fix bom export having "null" column
+- Add via support for easyeda
+- Added a setting Check box to "highlight row on click"
+- Use whole checkbox cell for touch events
+- Fix dark mode background in bom only mode
+
 ## [2.9.0-2] - 2024-10-15
 ### Fixed
 - Fix polygons inside footprints for kicad 8
