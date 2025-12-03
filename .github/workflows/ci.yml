@@ -3,9 +3,9 @@ name: Test
 
 on:
   pull_request:
-  push:
-    branches:
-      - master
+#  push:
+#    branches:
+#      - master
   workflow_dispatch:
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
           python3 -m pip install --break-system-packages --upgrade hatch
 
       - name: Test
-        run: hatch -v run pytest -vv tests
+        run: hatch -v run pytest-3 -vv tests
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
