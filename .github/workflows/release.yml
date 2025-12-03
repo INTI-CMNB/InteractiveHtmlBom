@@ -77,7 +77,7 @@ jobs:
           CHANGELOG_FILE: "CHANGELOG.md"
         with:
           args: |
-            ${{needs.build.outputs.DEB_NAME}}
+            package/${{needs.build.outputs.DEB_NAME}}
 
       - name: Trigger kicad_auto image build
         run: |
