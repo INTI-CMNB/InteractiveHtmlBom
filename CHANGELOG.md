@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note: only changes after the fork are listed.
 
 
+## [2.10.0-2] - 2025-12-03
+### Fixed
+- user-select property removal
+- Don't ignore through hole pads even if they have no copper on F/B layers
+
+### Added
+- fillrule to text properties
+- Option to set markWhenChecked
+
+
 ## [2.10.0-1] - 2025-04-14
 ### Fixed
 - Add padstack support for kicad 9
