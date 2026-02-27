@@ -1,3 +1,10 @@
+interactivehtmlbom.inti-cmnb (2.10.0-3) stable; urgency=medium
+
+  * Add KiCad 10 support for UNCONNECTED_LAYER_MODE_REMOVE_ALL
+  * Fixed line width (fillrule)
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Fri, 27 Feb 2026 09:27:01 -0300
+
 interactivehtmlbom.inti-cmnb (2.10.0-2) stable; urgency=medium
 
   * Fix user-select property removal
