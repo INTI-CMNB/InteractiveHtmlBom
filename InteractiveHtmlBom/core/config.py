@@ -215,7 +215,6 @@ class Config:
         f.Flush()
 
     def set_from_dialog(self, dlg):
-        # type: (dialog.settings_dialog.SettingsDialogPanel) -> None
         # Html
         self.dark_mode = dlg.html.darkModeCheckbox.IsChecked()
         self.show_pads = dlg.html.showPadsCheckbox.IsChecked()
@@ -263,7 +262,6 @@ class Config:
             self.dnp_field = ''
 
     def transfer_to_dialog(self, dlg):
-        # type: (dialog.settings_dialog.SettingsDialogPanel) -> None
         # Html
         dlg.html.darkModeCheckbox.Value = self.dark_mode
         dlg.html.showPadsCheckbox.Value = self.show_pads
