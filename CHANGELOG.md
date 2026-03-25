@@ -7,12 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note: only changes after the fork are listed.
 
 
+## [2.11.0-1] - 2026-03-25
+### Fixed
+- Zone rendering
+
+### Added
+- KiCad 10 native variants
+
+
 ## [2.10.0-3] - 2026-02-27
 ### Fixed
 - Line width (fillrule)
+- Zone rendering
 
 ### Added
 - KiCad 10 support for new UNCONNECTED_LAYER_MODE_REMOVE_ALL API
+- KiCad 10 native variants
 
 
 ## [2.10.0-2] - 2025-12-03
