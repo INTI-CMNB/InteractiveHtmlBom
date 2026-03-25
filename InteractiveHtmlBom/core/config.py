@@ -15,6 +15,8 @@ class Config:
         '    %p : pcb/project title from pcb metadata.\n'
         '    %c : company from pcb metadata.\n'
         '    %r : revision from pcb metadata.\n'
+        '    %v : pcb variant.\n'
+        '    %V : pcb variant or \'default\', if empty.\n'
         '    %d : pcb date from metadata if available, '
         'file modification date otherwise.\n'
         '    %D : bom generation date.\n'
@@ -60,7 +62,7 @@ class Config:
     open_browser = True
 
     # General section
-    bom_dest_dir = 'bom/'  # This is relative to pcb file directory
+    bom_dest_dir = 'bom'  # This is relative to pcb file directory
     bom_name_format = 'ibom'
     component_sort_order = default_sort_order
     component_blacklist = []
@@ -80,6 +82,9 @@ class Config:
     board_variant_whitelist = []
     board_variant_blacklist = []
     dnp_field = ''
+
+    # this is cli only field
+    kicad_variant = ''
 
     @staticmethod
     def _split(s):
@@ -321,14 +326,21 @@ class Config:
                                  self.board_variant_blacklist)
         dlg.fields.dnpFieldBox.Value = self.dnp_field
 
+        if self.kicad_variant != '':
+            dlg.fields.variantLabel.Show()
+        dlg.fields.variantLabel.SetLabel(f'Current variant: {self.kicad_variant}')
+
         dlg.finish_init()
 
     @classmethod
     def add_options(cls, parser, version):
         # type: (argparse.ArgumentParser, str) -> None
         parser.add_argument('--show-dialog', action='store_true',
-                            help='Shows config dialog. All other flags '
-                                 'will be ignored.')
+                            help='Shows config dialog. All flags except '
+                                 '--kicad-variant will be ignored.')
+        parser.add_argument('--kicad-variant', default='',
+                            help='KiCad board variant, empty is default '
+                                 'variant. (Only for KiCad v10+)')
         parser.add_argument('--version', action='version', version=version)
         # Html
         parser.add_argument('--dark-mode', help='Default to dark mode.',
@@ -440,6 +452,8 @@ class Config:
     def set_from_args(self, args):
         # type: (argparse.Namespace) -> None
         import math
+
+        self.kicad_variant = args.kicad_variant
 
         # Html
         self.dark_mode = args.dark_mode
