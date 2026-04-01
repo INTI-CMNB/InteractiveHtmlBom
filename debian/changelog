@@ -1,3 +1,12 @@
+interactivehtmlbom.inti-cmnb (2.11.1-1) stable; urgency=medium
+
+  * KiCad 10 fixes:
+    - polygon fill detection
+    - footprint value not changing with kicad variants
+    - default variant exclude from bom flag
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Wed, 01 Apr 2026 07:17:39 -0300
+
 interactivehtmlbom.inti-cmnb (2.11.0-1) stable; urgency=medium
 
   * Add KiCad 10 native variants

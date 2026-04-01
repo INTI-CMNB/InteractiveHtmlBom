@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note: only changes after the fork are listed.
 
 
+## [2.11.1-1] - 2026-04-01
+### Fixed
+- KiCad 10 polygon fill detection
+- KiCad 10 footprint value not changing with kicad variants
+- KiCad 10 default variant exclude from bom flag
+
+
 ## [2.11.0-1] - 2026-03-25
 ### Fixed
 - Zone rendering
