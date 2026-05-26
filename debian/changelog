@@ -1,3 +1,11 @@
+interactivehtmlbom.inti-cmnb (2.11.2-1) stable; urgency=medium
+
+  * KiCad 10 fixes:
+    - NPTH pads with no layers
+    - DNP detection for kicad variants
+
+ -- Salvador Eduardo Tropea <salvador@inti.gob.ar>  Tue, 26 May 2026 10:03:41 -0300
+
 interactivehtmlbom.inti-cmnb (2.11.1-1) stable; urgency=medium
 
   * KiCad 10 fixes:
