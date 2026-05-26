@@ -71,8 +71,7 @@ class PcbnewParser(EcadParser):
                 var_fields = variant.GetFields()
                 for k in var_fields.keys():
                     props[str(k)] = str(f.GetFieldShownText(str(k)))
-                if variant.GetDNP():
-                    props["kicad_dnp"] = "DNP"
+                props["kicad_dnp"] = "DNP" if variant.GetDNP() else ""
 
         return props
 
@@ -494,7 +493,8 @@ class PcbnewParser(EcadParser):
                     pads.append(pad_dict)
             return pads
         else:
-            pad_dict = self.parse_pad_layer(pad, layers_set[0])
+            pad_layer = layers_set[0] if layers_set else pcbnew.F_Cu
+            pad_dict = self.parse_pad_layer(pad, pad_layer)
             pad_dict["layers"] = layers
             return [pad_dict]
 
